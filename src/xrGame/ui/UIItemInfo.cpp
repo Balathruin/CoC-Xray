@@ -25,7 +25,6 @@
 #include "../eatable_item.h"
 #include "UICellItem.h"
 
-
 #include "UIScriptWnd.h"
 #include "../script_game_object.h"
 

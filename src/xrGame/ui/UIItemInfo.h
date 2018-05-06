@@ -1,7 +1,6 @@
 #pragma once
 #include "uiwindow.h"
 
-
 class CInventoryItem;
 class CUIStatic;
 class CUITextWnd;
