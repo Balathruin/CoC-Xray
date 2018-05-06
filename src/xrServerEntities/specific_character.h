@@ -144,8 +144,8 @@ public:
 	shared_str					Bio						() const ;
 	const CHARACTER_COMMUNITY&	Community				() const ;
 	SSpecificCharacterData::SMoneyDef& MoneyDef			() 	{return data()->money_def;}
-	SSpecificCharacterData::SRankDef& RankDef			() 	{ return data()->rank_def;}
-	SSpecificCharacterData::SReputationDef& ReputationDef()	{ return data()->reputation_def;}
+	SSpecificCharacterData::SRankDef& RankDef() 	{ return data()->rank_def; }
+	SSpecificCharacterData::SReputationDef& ReputationDef() 	{ return data()->reputation_def; }
 #endif
 
 	CHARACTER_RANK_VALUE		Rank					() const ;

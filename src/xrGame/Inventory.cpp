@@ -1010,7 +1010,7 @@ bool CInventory::Eat(PIItem pIItem)
 	{
 		u8 remaining = pItemToEat->GetRemainingUses();
 		if (remaining > 0)
-			pItemToEat->SetRemainingUses(remaining - 1);
+			pItemToEat->SetRemainingUses(remaining-1);
 	}
 
 	if (pItemToEat->Empty() && pItemToEat->CanDelete())

@@ -185,6 +185,12 @@ void CWeaponMagazined::FireStart()
                 if (GetState() == eMisfire) return;
 
                 inherited::FireStart();
+				
+#ifdef EXTENDED_WEAPON_CALLBACKS
+				CGameObject	*object = smart_cast<CGameObject*>(H_Parent());
+				if (object)
+					object->callback(GameObject::eOnWeaponFired)(object->lua_game_object(), this->lua_game_object(), iAmmoElapsed);
+#endif
 
                 if (iAmmoElapsed == 0)
                     OnMagazineEmpty();
@@ -611,11 +617,11 @@ void CWeaponMagazined::state_Fire(float dt)
             else
                 FireTrace(m_vStartPos, m_vStartDir);
 
-					if (CheckForMisfire())
-					{
-						StopShooting();
-						return;
-					}
+			if (CheckForMisfire())
+			{
+				StopShooting();
+				return;
+			}
         }
 
         if (m_iShotNum == m_iQueueSize)
