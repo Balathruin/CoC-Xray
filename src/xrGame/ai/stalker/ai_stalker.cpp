@@ -486,6 +486,8 @@ void CAI_Stalker::Die				(CObject* who)
 	//запретить использование слотов в инвенторе
 	inventory().SetSlotsUseful		(false);
 
+	//This is done in release manager script
+	/*
 	if (inventory().GetActiveSlot() == NO_ACTIVE_SLOT)
 		return;
 
@@ -509,6 +511,7 @@ void CAI_Stalker::Die				(CObject* who)
 			u_EventSend				(packet);
 		}
 	}
+	*/
 }
 
 void CAI_Stalker::Load				(LPCSTR section)
@@ -1404,3 +1407,18 @@ void CAI_Stalker::ResetBoneProtections(LPCSTR imm_sect, LPCSTR bone_sect)
 		}
 	}
 }
+
+void CAI_Stalker::ChangeVisual(shared_str NewVisual)
+{
+	if (!NewVisual.size()) return;
+	if (cNameVisual().size())
+	{
+		if (cNameVisual() == NewVisual) return;
+	}
+
+	cNameVisual_set(NewVisual);
+
+	Visual()->dcast_PKinematics()->CalculateBones_Invalidate();
+	Visual()->dcast_PKinematics()->CalculateBones(TRUE);
+};
+

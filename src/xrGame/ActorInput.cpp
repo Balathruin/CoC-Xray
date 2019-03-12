@@ -2,6 +2,7 @@
 #include <dinput.h>
 #include "Actor.h"
 #include "Torch.h"
+#include "Flashlight.h"
 #include "trade.h"
 #include "../xrEngine/CameraBase.h"
 
@@ -11,13 +12,11 @@
 
 #include "hit.h"
 #include "PHDestroyable.h"
-#include "Car.h"
 #include "UIGameSP.h"
 #include "inventory.h"
 #include "level.h"
 #include "game_cl_base.h"
 #include "xr_level_controller.h"
-#include "UsableScriptObject.h"
 #include "actorcondition.h"
 #include "actor_input_handler.h"
 #include "string_table.h"
@@ -33,6 +32,7 @@
 #include "clsid_game.h"
 #include "hudmanager.h"
 #include "Weapon.h"
+#include "holder_custom.h"
 
 extern u32 hud_adj_mode;
 
@@ -111,7 +111,15 @@ void CActor::IR_OnKeyboardPress(int cmd)
 			SwitchTorch();
 			break;
 		}
-
+		//Romann
+	case kFLASH:
+		{
+			CFlashlight* flashlight = smart_cast<CFlashlight*>(inventory().ItemFromSlot(DETECTOR_SLOT));
+			if (flashlight)
+				flashlight->ToggleSwitch();
+			break;
+		}
+		//Romann
 	case kDETECTOR:
 		{
 			PIItem det_active					= inventory().ItemFromSlot(DETECTOR_SLOT);
@@ -120,6 +128,12 @@ void CActor::IR_OnKeyboardPress(int cmd)
 				CCustomDetector* det			= smart_cast<CCustomDetector*>(det_active);
 				if (det)
 					det->ToggleDetector				(g_player_hud->attached_item(0)!=NULL);
+				else
+				{
+					CFlashlight* flashlight = smart_cast<CFlashlight*>(det_active);
+					if (flashlight)
+						flashlight->ToggleDevice(g_player_hud->attached_item(0) != NULL);
+				}
 				return;
 			}
 		}break;
@@ -229,7 +243,7 @@ void CActor::IR_OnKeyboardRelease(int cmd)
 		switch(cmd)
 		{
 		case kJUMP:		mstate_wishful &=~mcJump;		break;
-		case kDROP:		if(GAME_PHASE_INPROGRESS == Game().Phase()) g_PerformDrop();				break;
+		case kDROP:		if (GAME_PHASE_INPROGRESS == Game().Phase()) g_PerformDrop();				break;
 		}
 	}
 }
@@ -324,14 +338,7 @@ bool CActor::use_Holder				(CHolderCustom* holder)
 {
 
 	if(m_holder){
-		bool b = false;
-		CGameObject* holderGO			= smart_cast<CGameObject*>(m_holder);
-		
-		if(smart_cast<CCar*>(holderGO))
-			b = use_Vehicle(0);
-		else
-			b = use_HolderEx(0,false);
-
+		bool b = use_HolderEx(0,false);
 		if(inventory().ActiveItem()){
 			CHudItem* hi = smart_cast<CHudItem*>(inventory().ActiveItem());
 			if(hi) hi->OnAnimationEnd(hi->GetState());
@@ -339,13 +346,7 @@ bool CActor::use_Holder				(CHolderCustom* holder)
 
 		return b;
 	}else{
-		bool b = false;
-		//CGameObject* holderGO			= smart_cast<CGameObject*>(holder);
-		if(smart_cast<CCar*>(holder))
-			b = use_Vehicle(holder);
-		else
-			b = use_HolderEx(holder,false);
-		
+		bool b = use_HolderEx(holder,false);
 		if(b){//used succesfully
 			// switch off torch...
 			CAttachableItem *I = CAttachmentOwner::attachedItem(CLSID_DEVICE_TORCH);
@@ -381,9 +382,9 @@ void CActor::ActorUse()
 
 	
 
-	if(m_pUsableObject && NULL==m_pObjectWeLookingAt->cast_inventory_item())
+	if (m_pObjectWeLookingAt && NULL == m_pObjectWeLookingAt->cast_inventory_item())
 	{
-		m_pUsableObject->use(this);
+		m_pObjectWeLookingAt->use(this);
 	}
 	
 	if ( m_pInvBoxWeLookingAt && m_pInvBoxWeLookingAt->nonscript_usable() )
@@ -399,7 +400,7 @@ void CActor::ActorUse()
 		return;
 	}
 
-	if(!m_pUsableObject||m_pUsableObject->nonscript_usable())
+	if (!m_pObjectWeLookingAt || m_pObjectWeLookingAt->nonscript_usable())
 	{
 		bool bCaptured = false;
 
@@ -579,48 +580,14 @@ void CActor::set_input_external_handler(CActorInputHandler *handler)
 
 void CActor::SwitchNightVision()
 {
-	CWeapon* wpn1 = NULL;
-	CWeapon* wpn2 = NULL;
-	if(inventory().ItemFromSlot(INV_SLOT_2))
-		wpn1 = smart_cast<CWeapon*>(inventory().ItemFromSlot(INV_SLOT_2));
-
-	if(inventory().ItemFromSlot(INV_SLOT_3))
-		wpn2 = smart_cast<CWeapon*>(inventory().ItemFromSlot(INV_SLOT_3));
-
-	xr_vector<CAttachableItem*> const& all = CAttachmentOwner::attached_objects();
-	xr_vector<CAttachableItem*>::const_iterator it = all.begin();
-	xr_vector<CAttachableItem*>::const_iterator it_e = all.end();
-	for ( ; it != it_e; ++it )
-	{
-		CTorch* torch = smart_cast<CTorch*>(*it);
-		if ( torch )
-		{	
-			if(wpn1 && wpn1->IsZoomed())
-				return;
-
-			if(wpn2 && wpn2->IsZoomed())
-				return;
-
-			torch->SwitchNightVision();
-			return;
-		}
-	}
+	SwitchNightVision(!m_bNightVisionOn);
 }
 
 void CActor::SwitchTorch()
 { 
-	xr_vector<CAttachableItem*> const& all = CAttachmentOwner::attached_objects();
-	xr_vector<CAttachableItem*>::const_iterator it = all.begin();
-	xr_vector<CAttachableItem*>::const_iterator it_e = all.end();
-	for ( ; it != it_e; ++it )
-	{
-		CTorch* torch = smart_cast<CTorch*>(*it);
-		if ( torch )
-		{		
-			torch->Switch();
-			return;
-		}
-	}
+	CTorch* pTorch = smart_cast<CTorch*>(inventory().ItemFromSlot(TORCH_SLOT));
+	if (pTorch)
+		pTorch->Switch();
 }
 
 void CActor::actor_kick()

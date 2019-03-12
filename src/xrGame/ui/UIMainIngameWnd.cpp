@@ -50,7 +50,6 @@
 #include "../game_news.h"
 
 #include "static_cast_checked.hpp"
-#include "game_cl_capture_the_artefact.h"
 #include "UIHudStatesWnd.h"
 #include "UIActorMenu.h"
 
@@ -487,7 +486,7 @@ void CUIMainIngameWnd::AnimateContacts(bool b_snd)
 {
 	UIZoneMap->Counter_ResetClrAnimation();
 
-	if(b_snd)
+	if(b_snd && !UIZoneMap->disabled)
 		HUD_SOUND_ITEM::PlaySound	(m_contactSnd, Fvector().set(0,0,0), 0, true );
 
 }
@@ -726,16 +725,23 @@ void CUIMainIngameWnd::UpdateMainIndicators()
 // Overweight icon
 	float cur_weight = pActor->inventory().TotalWeight();
 	float max_weight = pActor->MaxWalkWeight();
+	float max_carry_weight = pActor->MaxCarryWeight();
 	m_ind_overweight->Show(false);
-	if(cur_weight>=max_weight-10.0f)
+
+	if (cur_weight >= max_carry_weight)
 	{
 		m_ind_overweight->Show(true);
-		if(cur_weight>max_weight)
+		if (cur_weight >= max_weight)
+		{
 			m_ind_overweight->InitTexture("ui_inGame2_circle_Overweight_red");
-		//else if(cur_weight>max_weight-10.0f)
-		//	m_ind_overweight->InitTexture("ui_inGame2_circle_Overweight_yellow");
+		}
 		else
-			m_ind_overweight->InitTexture("ui_inGame2_circle_Overweight_yellow");
+		{
+			if (max_carry_weight / max_weight >= 0.5f)
+				m_ind_overweight->InitTexture("ui_inGame2_circle_Overweight_yellow");
+			else
+				m_ind_overweight->InitTexture("ui_inGame2_circle_Overweight_green");
+		}
 	}
 }
 
@@ -887,7 +893,7 @@ void CUIMainIngameWnd::DrawMainIndicatorsForInventory()
 	m_ui_hud_states->DrawZoneIndicators();
 }
 
-void CUIMainIngameWnd::UpdateBoosterIndicators(const xr_map<EBoostParams, SBooster> influences)
+void CUIMainIngameWnd::UpdateBoosterIndicators(const xr_map<EBoostParams, SBooster>& influences)
 {
 	m_ind_boost_psy->Show(false);
 	m_ind_boost_radia->Show(false);

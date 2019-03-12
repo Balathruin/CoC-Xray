@@ -51,6 +51,8 @@ public:
 				void	SetPowerPower						(float value)					{m_fPowerRestoreSpeed = value;}
 				void	SetBleedingPower						(float value)					{m_fBleedingRestoreSpeed = value;}                                  
 
+				float m_fJumpSpeed;
+				float m_fWalkAccel;
 protected:
 	virtual void					UpdateCLChild					()		{};
 	virtual void					CreateArtefactActivation			();
@@ -91,7 +93,7 @@ public:
 	float 							m_fSatietyRestoreSpeed;
 	float							m_fPowerRestoreSpeed;
 	float							m_fBleedingRestoreSpeed;
-	CHitImmunity 					m_ArtefactHitImmunities;
+	HitImmunity::HitTypeSVec		m_ArtefactHitImmunities;
 public:
 	enum EAFHudStates {
 		eActivating = eLastBaseState+1,

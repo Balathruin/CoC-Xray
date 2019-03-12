@@ -64,6 +64,20 @@ void SBinocVisibleObj::Draw()
 	m_rb.Draw			();
 }
 
+struct check_pred
+{
+	check_pred(){ apos = Actor()->Position(); };
+	Fvector apos;
+	IC void operator()(SBinocVisibleObj* _it){
+		auto object_ = _it->m_object;
+		CEntityAlive*	EA = smart_cast<CEntityAlive*>(object_);
+		Fvector opos = Fvector(object_->Position());
+		if (!EA->g_Alive() ||
+			(0 > opos.sub(apos).dotproduct(Device.vCameraDirection)))
+			_it->m_flags.set(flVisObjNotValid, TRUE);
+	};
+};
+
 void SBinocVisibleObj::Update()
 {
 	m_flags.set		(	flVisObjNotValid,TRUE);
@@ -133,11 +147,11 @@ void SBinocVisibleObj::Update()
 					switch(RELATION_REGISTRY().GetRelationType(others_inv_owner, our_inv_owner))
 					{
 					case ALife::eRelationTypeEnemy:
-						clr = C_ON_ENEMY; break;
+						clr = m_colors[0].get(); break;
 					case ALife::eRelationTypeNeutral:
-						clr = C_ON_NEUTRAL; break;
+						clr = m_colors[1].get(); break;
 					case ALife::eRelationTypeFriend:
-						clr = C_ON_FRIEND; break;
+						clr = m_colors[2].get(); break;
 					}
 				}
 			}
@@ -196,6 +210,8 @@ void CBinocularsVision::Update()
 		CEntityAlive*	EA = smart_cast<CEntityAlive*>(object_);
 		if(!EA || !EA->g_Alive())						continue;
 		
+		Fvector opos = Fvector(object_->Position());
+		if (0 > opos.sub(Actor()->Position()).dotproduct(Device.vCameraDirection)) continue;
 
 		FindVisObjByObject	f				(object_);
 		VIS_OBJECTS_IT found;
@@ -207,6 +223,9 @@ void CBinocularsVision::Update()
 			m_active_objects.push_back		(xr_new<SBinocVisibleObj>() );
 			SBinocVisibleObj* new_vis_obj	= m_active_objects.back();
 			new_vis_obj->m_flags.set		(flVisObjNotValid,FALSE);
+			new_vis_obj->m_colors[0] = m_colors[0];
+			new_vis_obj->m_colors[1] = m_colors[1];
+			new_vis_obj->m_colors[2] = m_colors[2];
 			new_vis_obj->m_object			= object_;
 			new_vis_obj->create_default		(m_frame_color.get());
 			new_vis_obj->m_upd_speed		= m_rotating_speed;
@@ -214,12 +233,30 @@ void CBinocularsVision::Update()
 			m_sounds.PlaySound	("found_snd", Fvector().set(0,0,0), NULL, true);
 		}
 	}
+
+	/*
 	std::sort								(m_active_objects.begin(), m_active_objects.end());
 
 	while(m_active_objects.size() && m_active_objects.back()->m_flags.test(flVisObjNotValid)){
 		xr_delete							(m_active_objects.back());
 		m_active_objects.pop_back			();
 	}
+	*/
+
+	// death or invis
+	for_each(m_active_objects.begin(), m_active_objects.end(), check_pred());
+
+	m_active_objects.erase(
+		remove_if(
+		m_active_objects.begin(),
+		m_active_objects.end(),
+		[](SBinocVisibleObj* _it){
+		bool res = _it->m_flags.test(flVisObjNotValid);
+		if (res) xr_delete(_it);
+		return res;
+	}),
+		m_active_objects.end()
+		);
 
 	it = m_active_objects.begin();
 	for(;it!=m_active_objects.end();++it)
@@ -245,8 +282,11 @@ void CBinocularsVision::Draw()
 
 void CBinocularsVision::Load(const shared_str& section)
 {
-	m_rotating_speed	= pSettings->r_float(section,"vis_frame_speed");
-	m_frame_color		= pSettings->r_fcolor(section,"vis_frame_color");
+	m_rotating_speed = pSettings->r_float(section,"vis_frame_speed");
+	m_frame_color = pSettings->r_fcolor(section,"vis_frame_color");
+	m_colors[0] = READ_IF_EXISTS(pSettings, r_fcolor,section, "vis_enemy_color", Fcolor().set(C_ON_ENEMY));
+	m_colors[1] = READ_IF_EXISTS(pSettings, r_fcolor, section, "vis_neutral_color", Fcolor().set(C_ON_NEUTRAL));
+	m_colors[2] = READ_IF_EXISTS(pSettings, r_fcolor, section, "vis_friend_color", Fcolor().set(C_ON_FRIEND));
 	m_sounds.LoadSound	(section.c_str(),"found_snd", "found_snd", false, SOUND_TYPE_NO_SOUND);
 	m_sounds.LoadSound	(section.c_str(),"catch_snd", "catch_snd", false, SOUND_TYPE_NO_SOUND);
 }

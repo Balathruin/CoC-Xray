@@ -36,42 +36,12 @@ void fix_texture_name(LPSTR fn)
 
 int get_texture_load_lod(LPCSTR fn)
 {
-	CInifile::Sect& sect	= pSettings->r_section("reduce_lod_texture_list");
-	CInifile::SectCIt it_	= sect.Data.begin();
-	CInifile::SectCIt it_e_	= sect.Data.end();
-
-	CInifile::SectCIt it	= it_;
-	CInifile::SectCIt it_e	= it_e_;
-
 	static bool enough_address_space_available = is_enough_address_space_available();
 
-	for(;it!=it_e;++it)
-	{
-		if( strstr(fn, it->first.c_str()) )
-		{
-			if(psTextureLOD<1) {
-				if ( enough_address_space_available || (g_current_renderer < 2) )
-					return 0;
-				else
-					return 1;
-			}
-			else
-			if(psTextureLOD<3)
-				return 1;
-			else
-				return 2;
-		}
-	}
-
-	if(psTextureLOD<2) {
-//		if ( enough_address_space_available || (g_current_renderer < 2) )
-			return 0;
-//		else
-//			return 1;
-	}
-	else
-	if(psTextureLOD<4)
-		return 1;
+	if (g_current_renderer < 2)
+		return 0;
+	else if (enough_address_space_available)
+		return psTextureLOD;
 	else
 		return 2;
 }
@@ -529,24 +499,24 @@ _BUMP_from_base:
 		Msg			("! auto-generated bump map: %s",fname);
 //////////////////
 #ifndef _EDITOR
-		if (strstr(fname,"_bump#"))
-		{
-			R_ASSERT2	(FS.exist(fn,"$game_textures$",	"ed\\ed_dummy_bump#",	".dds"), "ed_dummy_bump#");
-			S						= FS.r_open	(fn);
-			R_ASSERT2				(S, fn);
-			img_size				= S->length	();
-			goto		_DDS_2D;
-		}
-		if (strstr(fname,"_bump"))
-		{
-			R_ASSERT2	(FS.exist(fn,"$game_textures$",	"ed\\ed_dummy_bump",	".dds"),"ed_dummy_bump");
-			S						= FS.r_open	(fn);
+			if (strstr(fname, "_bump#"))
+			{
+				R_ASSERT2(FS.exist(fn, "$game_textures$", "ed\\ed_dummy_bump#", ".dds"), "ed_dummy_bump#");
+				S = FS.r_open(fn);
+				R_ASSERT2(S, fn);
+				img_size = S->length();
+				goto		_DDS_2D;
+			}
+			if (strstr(fname, "_bump"))
+			{
+				R_ASSERT2(FS.exist(fn, "$game_textures$", "ed\\ed_dummy_bump", ".dds"), "ed_dummy_bump");
+				S = FS.r_open(fn);
 
-			R_ASSERT2	(S, fn);
+				R_ASSERT2(S, fn);
 
-			img_size				= S->length	();
-			goto		_DDS_2D;
-		}
+				img_size = S->length();
+				goto		_DDS_2D;
+			}
 #endif        
 //////////////////
 

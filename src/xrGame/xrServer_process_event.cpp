@@ -71,16 +71,6 @@ void xrServer::Process_event	(NET_Packet& P, ClientID sender)
 		}break;
 	case GE_RESPAWN:
 		{
-			CSE_Abstract*		E	= receiver;
-			if (E) 
-			{
-				R_ASSERT			(E->s_flags.is(M_SPAWN_OBJECT_PHANTOM));
-
-				svs_respawn			R;
-				R.timestamp			= timestamp	+ E->RespawnTime*1000;
-				R.phantom			= destination;
-				q_respawn.insert	(R);
-			}
 		}
 		break;
 	case GE_TRADE_BUY:
@@ -236,6 +226,21 @@ void xrServer::Process_event	(NET_Packet& P, ClientID sender)
 		{
 			SendBroadcast	(BroadcastCID, P, net_flags(TRUE, TRUE));
 		}break;
+	case GE_WEAPON_SYNCRONIZE:
+		{
+			CSE_ALifeItemWeapon* pW = smart_cast<CSE_ALifeItemWeapon*>(receiver);
+			if (pW)
+			{
+				pW->a_current_addon.data = P.r_u16();
+				pW->ammo_type.data = P.r_u8();
+				pW->a_elapsed.data = P.r_u16();
+				CSE_ALifeItemWeaponMagazinedWGL* pWGL = smart_cast<CSE_ALifeItemWeaponMagazinedWGL*>(pW);
+				if (pWGL)
+					pWGL->m_bGrenadeMode = !!P.r_u8();
+				else
+					P.r_u8();
+			}
+		}break;
 	case GE_CHANGE_POS:
 		{			
 			SendTo		(SV_Client->ID, P, net_flags(TRUE, TRUE));
@@ -311,7 +316,7 @@ void xrServer::Process_event	(NET_Packet& P, ClientID sender)
 		}break;
 	case GEG_PLAYER_ITEM_SELL:
 		{
-			game->OnPlayer_Sell_Item(sender, P);
+			//game->OnPlayer_Sell_Item(sender, P);
 		}break;
 	case GE_TELEPORT_OBJECT:
 		{
@@ -335,6 +340,21 @@ void xrServer::Process_event	(NET_Packet& P, ClientID sender)
 			CSE_ALifeTraderAbstract*	pTa = smart_cast<CSE_ALifeTraderAbstract*>(e_dest);
 			pTa->m_dwMoney				= P.r_u32();
 						
+		}break;
+	case GE_SYNC_ALIFEITEM:
+		{
+			CSE_ALifeItem* item = smart_cast<CSE_ALifeItem*>(receiver);
+			if (item)
+				item->m_fCondition = P.r_float();
+		}break;
+	case GE_TRADER_FLAGS:
+		{
+			CSE_ALifeTraderAbstract* pTa = smart_cast<CSE_ALifeTraderAbstract*>(receiver);
+			if (pTa)
+			{
+				pTa->m_trader_flags.assign(P.r_u32());
+				//Msg("GE_TRADER_FLAGS event received %d",pTa->m_trader_flags.get());
+			}
 		}break;
 	case GE_FREEZE_OBJECT:
 		break;

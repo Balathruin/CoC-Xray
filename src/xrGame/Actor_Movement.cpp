@@ -17,6 +17,9 @@
 #include "static_cast_checked.hpp"
 #include "player_hud.h"
 
+#include "CustomOutfit.h"
+#include "ActorBackpack.h"
+
 #ifdef DEBUG
 #include "phdebug.h"
 #endif
@@ -204,8 +207,30 @@ void CActor::g_cl_CheckControls(u32 mstate_wf, Fvector &vControlAccel, float &Ju
 		{
 			mstate_real			|=	mcJump;
 			m_bJumpKeyPressed	=	TRUE;
-			Jump				= m_fJumpSpeed;
-			m_fJumpTime			= s_fJumpTime;
+
+			float jumpSpd		= m_fJumpSpeed;
+
+			TIItemContainer::iterator it = inventory().m_belt.begin();
+			TIItemContainer::iterator ite = inventory().m_belt.end();
+			for (; it != ite; ++it)
+			{
+				CArtefact*	artefact = smart_cast<CArtefact*>(*it);
+				if (artefact)
+				{
+					jumpSpd *= (artefact->m_fJumpSpeed * artefact->GetCondition());
+				}
+			}
+
+			CCustomOutfit* outfit = GetOutfit();
+			if (outfit)
+				jumpSpd *= outfit->m_fJumpSpeed;
+
+			CBackpack* backpack = smart_cast<CBackpack*>(inventory().ItemFromSlot(BACKPACK_SLOT));
+			if (backpack)
+				jumpSpd *= backpack->m_fJumpSpeed;
+
+			Jump = jumpSpd;
+			m_fJumpTime = s_fJumpTime;
 
 
 			//уменьшить силу игрока из-за выполненого прыжка
@@ -260,7 +285,41 @@ void CActor::g_cl_CheckControls(u32 mstate_wf, Fvector &vControlAccel, float &Ju
 			float	scale			= vControlAccel.magnitude();
 			if(scale>EPS)	
 			{
-				scale	=	m_fWalkAccel/scale;
+				float accel_k = m_fWalkAccel;
+
+				TIItemContainer::iterator it = inventory().m_belt.begin();
+				TIItemContainer::iterator ite = inventory().m_belt.end();
+				for (; it != ite; ++it)
+				{
+					CArtefact*	artefact = smart_cast<CArtefact*>(*it);
+					if (artefact)
+					{
+						accel_k *= (artefact->m_fWalkAccel * artefact->GetCondition());
+					}
+				}
+
+				CCustomOutfit* outfit = GetOutfit();
+				if (outfit)
+				{
+					accel_k *= outfit->m_fWalkAccel;
+
+					if (inventory().TotalWeight() > MaxCarryWeight())
+						accel_k *= outfit->m_fOverweightWalkK;
+				}
+
+				CBackpack* backpack = smart_cast<CBackpack*>(inventory().ItemFromSlot(BACKPACK_SLOT));
+				if (backpack)
+				{
+					accel_k *= backpack->m_fWalkAccel;
+
+					if (inventory().TotalWeight() > MaxCarryWeight())
+						accel_k *= backpack->m_fOverweightWalkK;
+				}
+
+				if (inventory().TotalWeight() > MaxCarryWeight())
+					accel_k *= m_fOverweightWalkAccel;
+
+				scale	=	accel_k/scale;
 				if (bAccelerated)
 					if (mstate_real&mcBack)
 						scale *= m_fRunBackFactor;
@@ -493,7 +552,7 @@ void CActor::g_cl_Orientate	(u32 mstate_rl, float dt)
 	} else {
 		// if camera rotated more than 45 degrees - align model with it
 		float ty = angle_normalize(r_torso.yaw);
-		if (_abs(r_model_yaw-ty)>PI_DIV_4)	{
+		if (_abs(r_model_yaw-ty)>PI_DIV_4-30)	{
 			r_model_yaw_dest = ty;
 			// 
 			mstate_real	|= mcTurn;
@@ -534,10 +593,11 @@ bool isActorAccelerated(u32 mstate, bool ZoomMode)
 	else
 		res = true;
 
-	if (mstate&(mcCrouch|mcClimb|mcJump|mcLanding|mcLanding2))
+	if (mstate&(mcCrouch | mcClimb | mcJump | mcLanding | mcLanding2))
 		return res;
 	if (mstate & mcLookout || ZoomMode)
 		return false;
+
 	return res;
 }
 
@@ -622,11 +682,11 @@ bool CActor::is_jump()
 }
 
 //максимальный переносимы вес
-#include "CustomOutfit.h"
+
 float CActor::MaxCarryWeight () const
 {
 	float res = inventory().GetMaxWeight();
-	res      += get_additional_weight();
+	res      += get_additional_weight2();
 	return res;
 }
 
@@ -656,6 +716,29 @@ float CActor::get_additional_weight() const
 		CArtefact*	artefact = smart_cast<CArtefact*>(*it);
 		if(artefact)
 			res			+= (artefact->AdditionalInventoryWeight()*artefact->GetCondition());
+	}
+
+	return res;
+}
+
+float CActor::get_additional_weight2() const
+{
+	float res = 0.0f;
+
+	CCustomOutfit* outfit = GetOutfit();
+	if (outfit)
+		res += outfit->m_additional_weight2;
+
+	CBackpack* pBackpack = smart_cast<CBackpack*>(inventory().ItemFromSlot(BACKPACK_SLOT));
+	if (pBackpack)
+		res += pBackpack->m_additional_weight2;
+
+	for (TIItemContainer::const_iterator it = inventory().m_belt.begin();
+		inventory().m_belt.end() != it; ++it)
+	{
+		CArtefact*	artefact = smart_cast<CArtefact*>(*it);
+		if (artefact)
+			res += (artefact->AdditionalInventoryWeight()*artefact->GetCondition());
 	}
 
 	return res;

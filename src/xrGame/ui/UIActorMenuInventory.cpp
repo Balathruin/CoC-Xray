@@ -29,12 +29,13 @@
 #include "../CustomOutfit.h"
 #include "../ActorHelmet.h"
 #include "../UICursor.h"
-#include "../MPPlayersBag.h"
+
 #include "../player_hud.h"
 #include "../CustomDetector.h"
 #include "../PDA.h"
 #include "../ActorBackpack.h"
 #include "../actor_defs.h"
+#include "script_engine.h"
 
 using namespace luabind; //Alundaio
 
@@ -432,7 +433,7 @@ void CUIActorMenu::InitInventoryContents(CUIDragDropListEx* pBagList)
 			InitCellForSlot(i);
 		else
 		{
-			if (i != BOLT_SLOT && i != PDA_SLOT && i != TORCH_SLOT && !m_pActorInvOwner->inventory().SlotIsPersistent(i))
+			if (i != BOLT_SLOT && i != PDA_SLOT && !m_pActorInvOwner->inventory().SlotIsPersistent(i))
 				InitCellForSlot(i);
 		}
 	}
@@ -458,10 +459,6 @@ void CUIActorMenu::InitInventoryContents(CUIDragDropListEx* pBagList)
 	ite = ruck_list.end();
 	for ( ; itb != ite; ++itb )
 	{
-		CMPPlayersBag* bag = smart_cast<CMPPlayersBag*>( &(*itb)->object() );
-		if ( bag )
-			continue;
-
 		CUICellItem* itm = create_cell_item( *itb );
 		curr_list->SetItem(itm);
 		if (m_currMenuMode == mmTrade && m_pPartnerInvOwner)

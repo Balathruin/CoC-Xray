@@ -7,7 +7,6 @@
 #include "GamePersistent.h"
 #include "MainMenu.h"
 #include "grenade.h"
-#include "spectator.h"
 #include "Car.h"
 #include "UIGameCustom.h"
 #include "UICursor.h"
@@ -16,7 +15,8 @@
 #ifdef	DEBUG
 #include "phdebug.h"
 #endif
-
+#include "Flashlight.h"
+#include "Inventory.h"
 extern CUIGameCustom*	CurrentGameUI()
 {
     return HUD().GetGameUI();
@@ -128,7 +128,7 @@ void CFontManager::OnDeviceReset()
 }
 
 //--------------------------------------------------------------------
-CHUDManager::CHUDManager() : pUIGame(NULL), m_pHUDTarget(xr_new<CHUDTarget>())
+CHUDManager::CHUDManager() : pUIGame(NULL), m_pHUDTarget(xr_new<CHUDTarget>()), b_online(false)
 {}
 //--------------------------------------------------------------------
 CHUDManager::~CHUDManager()
@@ -187,7 +187,7 @@ bool need_render_hud()
     if (A && (!A->HUDview() || !A->g_Alive()))
         return false;
 
-    if (smart_cast<CCar*>(O) || smart_cast<CSpectator*>(O))
+    if (smart_cast<CCar*>(O))
         return false;
 
     return true;
@@ -218,6 +218,12 @@ void CHUDManager::Render_Actor_Shadow() // added by KD
     if (!A) return;
     if (A->active_cam() != eacFirstEye) return; // KD: we need to render actor shadow only in first eye cam mode because
     // in other modes actor model already in scene graph and renders well
+	
+	//Alun: Due to glitchy shadows this is forced
+	CFlashlight* flashlight = smart_cast<CFlashlight*>(A->inventory().ItemFromSlot(DETECTOR_SLOT));
+	if (flashlight && flashlight->torch_active())
+		return;
+
     ::Render->set_Object(O->H_Root());
     O->renderable_Render();
 }

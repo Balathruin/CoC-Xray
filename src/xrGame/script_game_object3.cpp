@@ -1416,25 +1416,17 @@ float CScriptGameObject::GetLuminocity()
 
 void CScriptGameObject::ForceSetPosition(Fvector pos, bool bActivate)
 {
+	Fmatrix M = object().XFORM();
+	M.translate(pos);
+	object().ForceTransform(M);
 	CPhysicsShellHolder* sh = object().cast_physics_shell_holder();
-	if (!sh)
-		return;
-
-	CPhysicsShell* shell = sh->PPhysicsShell();
-	if (shell){
+	if (sh)
+	{
 		if (bActivate)
 			sh->activate_physic_shell();
-
-		Fmatrix	M = object().XFORM();
-		M.c = pos;
-		M.set(M);
-
-		shell->SetGlTransformDynamic(M);
-		if (sh->character_physics_support())
-			sh->character_physics_support()->ForceTransform(M);
+		if (sh->PPhysicsShell())
+			sh->PPhysicsShell()->SetTransform(M, mh_unspecified);
 	}
-	else
-		ai().script_engine().script_log(ScriptStorage::eLuaMessageTypeError, "force_set_position: object %s has no physics shell!", *object().cName());
 }
 
 void CScriptGameObject::SetRemainingUses(u8 value)
@@ -1531,6 +1523,19 @@ void CScriptGameObject::RemoveDanger(const CDangerObject& dobject)
 		return;
 
 	stalker->memory().danger().remove(dobject);
+}
+
+LPCSTR CScriptGameObject::bones_protection_sect()
+{
+	IKinematics* pKinematics = smart_cast<IKinematics*>(object().Visual());
+	if (!pKinematics)
+		return "";
+
+	CInifile* ini = pKinematics->LL_UserData();
+	if (ini)
+		return ini->r_string("bone_protection", "bones_protection_sect");
+
+	return "";
 }
 #endif
 //-Alundaio

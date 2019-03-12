@@ -35,7 +35,6 @@ class ENGINE_API CBlend;
 class CWeaponList;
 class CEffectorBobbing;
 class CHolderCustom;
-class CUsableScriptObject;
 
 struct SShootingEffector;
 struct SSleepEffector;
@@ -59,6 +58,8 @@ class CActorMemory;
 class CActorStatisticMgr;
 
 class CLocationManager;
+
+class CNightVisionEffector;
 
 class	CActor: 
     public CEntityAlive, 
@@ -257,7 +258,6 @@ protected:
     CHolderCustom*			m_holder;
     u16						m_holderID;
     bool					use_Holder				(CHolderCustom* holder);
-    bool					use_Vehicle				(CHolderCustom* object);
     void					ActorUse				();
 	void					actor_kick();
 
@@ -350,10 +350,11 @@ public:
     virtual bool			feel_touch_on_contact		(CObject* O);
 
     CGameObject*			ObjectWeLookingAt			() {return m_pObjectWeLookingAt;}
+	CScriptGameObject*		ObjectWeLookingAt_script() { return m_pObjectWeLookingAt ? m_pObjectWeLookingAt->lua_game_object() : (0); }
     CInventoryOwner*		PersonWeLookingAt			() {return m_pPersonWeLookingAt;}
     LPCSTR					GetDefaultActionForObject	() {return *m_sDefaultObjAction;}
 protected:
-    CUsableScriptObject*	m_pUsableObject;
+
     // Person we're looking at
     CInventoryOwner*		m_pPersonWeLookingAt;
     CHolderCustom*			m_pVehicleWeLookingAt;
@@ -426,6 +427,7 @@ protected:
 
 public:
     float					m_fWalkAccel;
+	float					m_fOverweightWalkAccel;
     float					m_fJumpSpeed;
     float					m_fRunFactor;
     float					m_fRunBackFactor;
@@ -461,8 +463,8 @@ public:
             bool						IsZoomAimingMode	() const {return m_bZoomAimingMode;}
     virtual float						MaxCarryWeight		() const;
             float						MaxWalkWeight		() const;
-            float						get_additional_weight() const;
-
+            float						get_additional_weight() const;	//MaxWalkWeight
+			float						get_additional_weight2() const;	//MaxCarryWeight
 protected:
     CFireDispertionController			m_fdisp_controller;
     //если актер целится в прицел
@@ -788,7 +790,22 @@ private:
 			{
 				mstate_wishful = state;
 			}
-      
+public:
+	void	SwitchNightVision(bool light_on, bool use_sounds = true, bool send_event = true);
+
+	bool	GetNightVisionStatus() { return m_bNightVisionOn; }
+	void	SetNightVisionAllowed(bool bAllow) { m_bNightVisionAllow = bAllow; }
+	CNightVisionEffector* GetNightVision() { return m_night_vision; }
+	void RepackAmmo();
+	
+	bool	CanUseWeapon() { return m_bCanUseWeapon; }
+	void	CanUseWeapon(bool val) { m_bCanUseWeapon = val; }
+protected:
+	bool					m_bCanUseWeapon;
+	bool					m_bNightVisionOn;
+	bool					m_bNightVisionAllow;
+
+	CNightVisionEffector*	m_night_vision;
 DECLARE_SCRIPT_REGISTER_FUNCTION
 };
 add_to_type_list(CActor)

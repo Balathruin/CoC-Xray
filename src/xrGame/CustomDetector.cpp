@@ -11,7 +11,7 @@
 #include "player_hud.h"
 #include "weapon.h"
 
-ITEM_INFO::ITEM_INFO()
+ITEM_INFO::ITEM_INFO() : snd_time(0), cur_period(0)
 {
 	pParticle	= NULL;
 	curr_ref	= NULL;
@@ -191,6 +191,7 @@ CCustomDetector::CCustomDetector()
 	m_ui				= NULL;
 	m_bFastAnimMode		= false;
 	m_bNeedActivation	= false;
+	m_bWorking			= false;
 }
 
 CCustomDetector::~CCustomDetector() 

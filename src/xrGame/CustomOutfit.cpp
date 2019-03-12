@@ -104,6 +104,9 @@ void CCustomOutfit::Load(LPCSTR section)
 	m_fPowerRestoreSpeed		= READ_IF_EXISTS(pSettings, r_float, section, "power_restore_speed",     0.0f );
 	m_fBleedingRestoreSpeed		= READ_IF_EXISTS(pSettings, r_float, section, "bleeding_restore_speed",  0.0f );
 
+	m_fJumpSpeed = READ_IF_EXISTS(pSettings, r_float, section, "jump_speed", 1.f);
+	m_fWalkAccel = READ_IF_EXISTS(pSettings, r_float, section, "walk_accel", 1.f);
+	m_fOverweightWalkK = READ_IF_EXISTS(pSettings, r_float, section, "overweight_walk_accel", 1.f);
 
 	//m_full_icon_name		= pSettings->r_string( section, "full_icon_name" );
 	m_artefact_count 		= READ_IF_EXISTS( pSettings, r_u32, section, "artefact_count", 0 );
@@ -215,7 +218,6 @@ BOOL	CCustomOutfit::BonePassBullet					(int boneID)
 	return m_boneProtection->getBonePassBullet(s16(boneID));
 }
 
-#include "torch.h"
 void	CCustomOutfit::OnMoveToSlot		(const SInvItemPlace& prev)
 {
 	if ( m_pInventory )
@@ -226,9 +228,8 @@ void	CCustomOutfit::OnMoveToSlot		(const SInvItemPlace& prev)
 			ApplySkinModel(pActor, true, false);
 			if (prev.type==eItemPlaceSlot && !bIsHelmetAvaliable)
 			{
-				CTorch* pTorch = smart_cast<CTorch*>(pActor->inventory().ItemFromSlot(TORCH_SLOT));
-				if(pTorch && pTorch->GetNightVisionStatus())
-					pTorch->SwitchNightVision(true, false);
+				if(pActor->GetNightVisionStatus())
+					pActor->SwitchNightVision(true, false);
 			}
 			PIItem pHelmet = pActor->inventory().ItemFromSlot(HELMET_SLOT);
 			if(pHelmet && !bIsHelmetAvaliable)
@@ -292,9 +293,8 @@ void	CCustomOutfit::OnMoveToRuck		(const SInvItemPlace& prev)
 		if (pActor)
 		{
 			ApplySkinModel(pActor, false, false);
-			CTorch* pTorch = smart_cast<CTorch*>(pActor->inventory().ItemFromSlot(TORCH_SLOT));
-			if(pTorch && !bIsHelmetAvaliable)
-				pTorch->SwitchNightVision(false);
+			if(!bIsHelmetAvaliable)
+				pActor->SwitchNightVision(false);
 		}
 	}
 };
@@ -353,6 +353,14 @@ bool CCustomOutfit::install_upgrade_impl( LPCSTR section, bool test )
 
 	result |= process_if_exists( section, "artefact_count", &CInifile::r_u32, m_artefact_count, test );
 	clamp( m_artefact_count, (u32)0, (u32)5 );
+
+	result |= process_if_exists(section, "jump_speed", &CInifile::r_float, m_fJumpSpeed, test);
+	result |= process_if_exists(section, "walk_accel", &CInifile::r_float, m_fWalkAccel, test);
+	result |= process_if_exists(section, "overweight_walk_k", &CInifile::r_float, m_fOverweightWalkK, test);
+
+	m_fJumpSpeed = READ_IF_EXISTS(pSettings, r_float, section, "jump_speed", 1.f);
+	m_fWalkAccel = READ_IF_EXISTS(pSettings, r_float, section, "walk_accel", 1.f);
+	m_fOverweightWalkK = READ_IF_EXISTS(pSettings, r_float, section, "overweight_walk_accel", 1.f);
 
 	return result;
 }

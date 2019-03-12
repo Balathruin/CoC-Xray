@@ -426,9 +426,10 @@ CSE_Abstract* try_to_clone_object(CALifeSimulator *self, CSE_Abstract *object, L
 		clone->wpn_flags = wpnmag->wpn_flags;
 		clone->m_addon_flags = wpnmag->m_addon_flags;
 		clone->m_fCondition = wpnmag->m_fCondition;
-		clone->ammo_type = wpnmag->ammo_type;
+		clone->ammo_type.data = wpnmag->ammo_type.data;
 		clone->m_upgrades = wpnmag->m_upgrades;
-		clone->set_ammo_elapsed(wpnmag->get_ammo_elapsed());
+		clone->a_elapsed.data = wpnmag->a_elapsed.data;
+		clone->a_current_addon.data = wpnmag->a_current_addon.data;
 
 		return	bRegister ? reprocess_spawn(self, absClone) : absClone;// (self->server().Process_spawn(packet, clientID));
 	}
@@ -450,6 +451,12 @@ const CALifeObjectRegistry::OBJECT_REGISTRY& alife_objects(const CALifeSimulator
 {
 	VERIFY(self);
 	return self->objects().objects();
+}
+
+xr_vector<u16>& get_children(const CALifeSimulator *self, CSE_Abstract *object)
+{
+	VERIFY(self);
+	return object->children;
 }
 //-Alundaio
 
@@ -500,6 +507,7 @@ void CALifeSimulator::script_register			(lua_State *L)
 			.def("register", &reprocess_spawn)
 			.def("set_objects_per_update", &set_objects_per_update)
 			.def("set_process_time", &set_process_time)
+			.def("get_children", &get_children, return_stl_iterator)
 			//Alundaio: END
 	
 		,def("alife",						&alife)

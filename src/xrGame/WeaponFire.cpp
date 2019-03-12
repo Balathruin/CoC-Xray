@@ -13,11 +13,7 @@
 
 #include "level_bullet_manager.h"
 
-#include "game_cl_mp.h"
-#include "reward_event_generator.h"
-
 #define FLAME_TIME 0.05f
-
 
 float _nrand(float sigma)
 {
@@ -91,7 +87,7 @@ void CWeapon::FireTrace		(const Fvector& P, const Fvector& D)
 	//выстерлить пулю (с учетом возможной стрельбы дробью)
 	for(int i = 0; i < l_cartridge.param_s.buckShot; ++i) 
 	{
-		FireBullet(P, D, fire_disp, l_cartridge, H_Parent()->ID(), ID(), SendHit, iAmmoElapsed);
+		FireBullet(P, D, fire_disp, l_cartridge, H_Parent()->ID(), ID(), SendHit, m_ammoElapsed.type1);
 	}
 
 	StartShotParticles		();
@@ -102,9 +98,9 @@ void CWeapon::FireTrace		(const Fvector& P, const Fvector& D)
 	
 	// Ammo
 	m_magazine.pop_back	();
-	--iAmmoElapsed;
+	--m_ammoElapsed.type1;
 
-	VERIFY((u32)iAmmoElapsed == m_magazine.size());
+	VERIFY((u32)m_ammoElapsed.type1 == m_magazine.size());
 }
 
 void CWeapon::StopShooting()

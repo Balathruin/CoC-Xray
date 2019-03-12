@@ -315,7 +315,11 @@ bool patrol_path_exists(LPCSTR patrol_path)
 
 LPCSTR get_name()
 {
-	return		(*Level().name());
+	if (Level().name().size())
+		return Level().name().c_str();
+
+	//Alun: This fixes level.name() being an empty string when checking it while server entities are being registered
+	return ai().game_graph().header().level(ai().level_graph().level_id()).name().c_str();
 }
 
 void prefetch_sound	(LPCSTR name)
@@ -541,17 +545,18 @@ void iterate_sounds2				(LPCSTR prefix, u32 max_count, luabind::object object, l
 }
 
 #include "actoreffector.h"
-float add_cam_effector(LPCSTR fn, int id, bool cyclic, LPCSTR cb_func)
+float add_cam_effector(LPCSTR fn, int id, bool cyclic, LPCSTR cb_func, bool hud_affect = true)
 {
 	CAnimatorCamEffectorScriptCB* e		= xr_new<CAnimatorCamEffectorScriptCB>(cb_func);
 	e->SetType					((ECamEffectorType)id);
 	e->SetCyclic				(cyclic);
 	e->Start					(fn);
+	e->SetHudAffect(hud_affect);
 	Actor()->Cameras().AddCamEffector(e);
 	return						e->GetAnimatorLength();
 }
 
-float add_cam_effector2(LPCSTR fn, int id, bool cyclic, LPCSTR cb_func, float cam_fov)
+float add_cam_effector2(LPCSTR fn, int id, bool cyclic, LPCSTR cb_func, float cam_fov, bool hud_affect = true)
 {
 	CAnimatorCamEffectorScriptCB* e		= xr_new<CAnimatorCamEffectorScriptCB>(cb_func);
 	e->m_bAbsolutePositioning	= true;
@@ -559,6 +564,7 @@ float add_cam_effector2(LPCSTR fn, int id, bool cyclic, LPCSTR cb_func, float ca
 	e->SetType					((ECamEffectorType)id);
 	e->SetCyclic				(cyclic);
 	e->Start					(fn);
+	e->SetHudAffect(hud_affect);
 	Actor()->Cameras().AddCamEffector(e);
 	return						e->GetAnimatorLength();
 }
@@ -729,6 +735,13 @@ void stop_tutorial()
 		g_tutorial->Stop();	
 }
 
+LPCSTR tutorial_name()
+{
+	if (g_tutorial)
+		return g_tutorial->m_name;
+	return "invalid";
+}
+
 LPCSTR translate_string(LPCSTR str)
 {
 	return *CStringTable().translate(str);
@@ -838,6 +851,30 @@ void reload_language()
 	CStringTable().ReloadLanguage();
 }
 
+void LevelPressAction(EGameActions cmd)
+{
+	Level().IR_OnKeyboardPress(cmd);
+}
+
+void LevelReleaseAction(EGameActions cmd)
+{
+	Level().IR_OnKeyboardRelease(cmd);
+}
+
+void LevelHoldAction(EGameActions cmd)
+{
+	Level().IR_OnKeyboardHold(cmd);
+}
+
+void patrol_path_add(LPCSTR patrol_path, CPatrolPath* path) {
+	ai().patrol_paths_raw().add_path(shared_str(patrol_path), path);
+}
+
+
+void patrol_path_remove(LPCSTR patrol_path) {
+	ai().patrol_paths_raw().remove_path(shared_str(patrol_path));
+}
+
 #pragma optimize("s",on)
 void CLevel::script_register(lua_State *L)
 {
@@ -850,6 +887,8 @@ void CLevel::script_register(lua_State *L)
 
 	module(L,"level")
 	[
+		def("patrol_path_add", &patrol_path_add),
+		def("patrol_path_remove", &patrol_path_remove),
 		//Alundaio: Extend level namespace exports
 #ifdef NAMESPACE_LEVEL_EXPORTS
 		def("u_event_gen", &u_event_gen), //Send events via packet
@@ -857,6 +896,9 @@ void CLevel::script_register(lua_State *L)
 		def("send", &g_send), //allow the ability to send netpacket to level
 		def("get_target_obj", &g_get_target_obj), //intentionally named to what is in xray extensions
 		def("get_target_dist", &g_get_target_dist),
+		def("press_action", &LevelPressAction),
+		def("release_action", &LevelReleaseAction),
+		def("hold_action", &LevelHoldAction),
 		def("get_target_element", &g_get_target_element), //Can get bone cursor is targetting
 		def("get_view_entity", &get_view_entity_script),
 		def("set_view_entity", &set_view_entity_script),
@@ -1061,6 +1103,7 @@ void CLevel::script_register(lua_State *L)
 	def("start_tutorial",		&start_tutorial),
 	def("stop_tutorial",		&stop_tutorial),
 	def("has_active_tutorial",	&has_active_tutotial),
+	def("active_tutorial_name", &tutorial_name),
 	def("translate_string",		&translate_string),
 	def("reload_language",		&reload_language),
 	def("log_stack_trace",		&LogStackTrace)

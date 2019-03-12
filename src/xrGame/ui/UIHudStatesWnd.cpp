@@ -357,11 +357,11 @@ void CUIHudStatesWnd::UpdateActiveItemInfo( CActor* actor )
 		CWeaponMagazined* wpnm = smart_cast<CWeaponMagazined*>(item);
 		if (wpnm)
 		{
-			if (wpnm->m_ammoType == 0)
+			if (wpnm->m_ammoType.type1 == 0)
 				m_ui_weapon_fmj_ammo->SetTextColor(m_ui_weapon_ammo_color_active);
-			else if (wpnm->m_ammoType == 1)
+			else if (wpnm->m_ammoType.type1 == 1)
 				m_ui_weapon_ap_ammo->SetTextColor(m_ui_weapon_ammo_color_active);
-			else if (wpnm->m_ammoType == 2)
+			else if (wpnm->m_ammoType.type1 == 2)
 				m_ui_weapon_third_ammo->SetTextColor(m_ui_weapon_ammo_color_active);
 		}
 		//-Alundaio
@@ -479,7 +479,7 @@ void CUIHudStatesWnd::UpdateZones()
 	}
 
 	Fvector posf; 
-	posf.set( Device.vCameraPosition );
+	posf.set(Level().CurrentControlEntity()->Position());
 	Level().hud_zones_list->feel_touch_update( posf, m_zone_feel_radius_max );
 	
 	if ( Level().hud_zones_list->m_ItemInfos.size() == 0 )
@@ -503,7 +503,7 @@ void CUIHudStatesWnd::UpdateZones()
 		}
 */
 
-		Fvector P			= Device.vCameraPosition;
+		Fvector P = Level().CurrentControlEntity()->Position();
 		P.y					-= 0.5f;
 		float dist_to_zone	= 0.0f;
 		float rad_zone		= 0.0f;
@@ -595,7 +595,7 @@ void CUIHudStatesWnd::UpdateIndicatorType( CActor* actor, ALife::EInfluenceType 
 	protect += (helmet) ? helmet->GetDefHitTypeProtection(hit_type) : 0.0f;
 	protect += actor->GetProtection_ArtefactsOnBelt( hit_type );
 
-	CEntityCondition::BOOSTER_MAP cur_booster_influences = actor->conditions().GetCurBoosterInfluences();
+	CEntityCondition::BOOSTER_MAP& cur_booster_influences = actor->conditions().GetCurBoosterInfluences();
 	CEntityCondition::BOOSTER_MAP::const_iterator it;
 	if(hit_type==ALife::eHitTypeChemicalBurn)
 	{
@@ -740,7 +740,7 @@ void CUIHudStatesWnd::FakeUpdateIndicatorType(u8 t, float power)
 	protect += (helmet) ? helmet->GetDefHitTypeProtection(hit_type) : 0.0f;
 	protect += actor->GetProtection_ArtefactsOnBelt( hit_type );
 
-	CEntityCondition::BOOSTER_MAP cur_booster_influences = actor->conditions().GetCurBoosterInfluences();
+	CEntityCondition::BOOSTER_MAP& cur_booster_influences = actor->conditions().GetCurBoosterInfluences();
 	CEntityCondition::BOOSTER_MAP::const_iterator it;
 	if(hit_type==ALife::eHitTypeChemicalBurn)
 	{

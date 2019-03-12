@@ -14,7 +14,6 @@
 #include "script_game_object.h"
 #include "xrserver_objects_alife.h"
 #include "xrServer_Objects_ALife_Items.h"
-#include "game_cl_base.h"
 #include "object_factory.h"
 #include "../Include/xrRender/Kinematics.h"
 #include "ai_object_location_impl.h"
@@ -24,9 +23,6 @@
 #include "level.h"
 #include "script_callback_ex.h"
 #include "../xrphysics/MathUtils.h"
-#include "game_cl_base_weapon_usage_statistic.h"
-#include "game_cl_mp.h"
-#include "reward_event_generator.h"
 #include "game_level_cross_table.h"
 #include "ai_obstacle.h"
 #include "magic_box3.h"
@@ -60,6 +56,11 @@ CGameObject::CGameObject		()
 
 	m_callbacks					= xr_new<CALLBACK_MAP>();
 	m_anim_mov_ctrl				= 0;
+	m_story_id = ALife::_STORY_ID(-1);
+	m_bObjectRemoved = false;
+
+	m_bNonscriptUsable = true;
+	m_sTipText = NULL;
 }
 
 CGameObject::~CGameObject		()
@@ -1148,3 +1149,44 @@ void CGameObject::OnRender			()
 	}
 }
 #endif // DEBUG
+
+#include "doors_door.h"
+#include "doors.h"
+bool CGameObject::use(CGameObject* who_use)
+{
+	VERIFY(who_use);
+	if (this->lua_game_object() && this->lua_game_object()->m_door && (this->lua_game_object()->m_door->is_blocked(doors::door_state_open) || this->lua_game_object()->m_door->is_blocked(doors::door_state_closed)))
+		return false;
+
+	this->callback(GameObject::eUseObject)(lua_game_object(), who_use->lua_game_object());
+
+	return true;
+}
+
+LPCSTR CGameObject::tip_text()
+{
+	return *m_sTipText;
+}
+void CGameObject::set_tip_text(LPCSTR new_text)
+{
+	m_sTipText = new_text;
+}
+void CGameObject::set_tip_text_default()
+{
+	m_sTipText = NULL;
+}
+
+bool CGameObject::nonscript_usable()
+{
+	return m_bNonscriptUsable;
+}
+void CGameObject::set_nonscript_usable(bool usable)
+{
+	m_bNonscriptUsable = usable;
+}
+
+//because don't want to use pch_script.h in step_manager.cpp
+void CGameObject::FootStepCallback(float power, bool b_play, bool b_on_ground, bool b_hud_view)
+{
+	this->callback(GameObject::eOnFootStep)(this->lua_game_object(), power, b_play, b_on_ground, b_hud_view);
+}

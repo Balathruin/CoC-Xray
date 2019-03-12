@@ -4,7 +4,7 @@
 #include "actorEffector.h"
 #include "inventory.h"
 #include "level.h"
-#include "sleepeffector.h"
+
 #include "game_base_space.h"
 #include "autosave_manager.h"
 #include "xrserver.h"
@@ -22,6 +22,7 @@
 #include "ui/UIMainIngameWnd.h"
 #include "ui/UIStatic.h"
 
+#include "CustomOutfit.h"
 #define MAX_SATIETY					1.0f
 #define START_SATIETY				0.5f
 
@@ -232,29 +233,18 @@ void CActorCondition::UpdateCondition()
 			RemoveEffector(m_object,effAlcohol);
 	}
 
-	
-	string512			pp_sect_name;
-	shared_str ln		= Level().name();
-	if(ln.size())
+	CEffectorPP* ppe = object().Cameras().GetPPEffector((EEffectorPPType)effPsyHealth);
+	if (!fsimilar(GetPsyHealth(), 1.0f, 0.05f))
 	{
-		CEffectorPP* ppe	= object().Cameras().GetPPEffector((EEffectorPPType)effPsyHealth);
-		
-
-		strconcat			(sizeof(pp_sect_name),pp_sect_name, "effector_psy_health", "_", *ln);
-		if(!pSettings->section_exist(pp_sect_name))
-			xr_strcpy			(pp_sect_name, "effector_psy_health");
-
-		if	( !fsimilar(GetPsyHealth(), 1.0f, 0.05f) )
+		if (!ppe)
 		{
-			if(!ppe)
-			{
-				AddEffector(m_object,effPsyHealth, pp_sect_name, GET_KOEFF_FUNC(this, &CActorCondition::GetPsy));
-			}
-		}else
-		{
-			if(ppe)
-				RemoveEffector(m_object,effPsyHealth);
+			AddEffector(m_object, effPsyHealth, "effector_psy_health", GET_KOEFF_FUNC(this, &CActorCondition::GetPsy));
 		}
+	}
+	else
+	{
+		if (ppe)
+			RemoveEffector(m_object, effPsyHealth);
 	}
 
 	UpdateSatiety();
@@ -454,10 +444,10 @@ void CActorCondition::ConditionJump(float weight)
 
 void CActorCondition::ConditionWalk(float weight, bool accel, bool sprint)
 {	
-	float power			=	m_fWalkPower;
-	power				+=	m_fWalkWeightPower*weight*(weight>1.f?m_fOverweightWalkK:1.f);
-	power				*=	m_fDeltaTime*(accel?(sprint?m_fSprintK:m_fAccelK):1.f);
-	m_fPower			-=	HitPowerEffect(power);
+	float power = m_fWalkPower;
+	power += m_fWalkWeightPower*weight*(weight>1.f ? m_fOverweightWalkK : 1.f);
+	power *= m_fDeltaTime*(accel?(sprint?m_fSprintK:m_fAccelK):1.f);
+	m_fPower -=	HitPowerEffect(power);
 }
 
 void CActorCondition::ConditionStand(float weight)

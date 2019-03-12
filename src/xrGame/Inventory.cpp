@@ -25,6 +25,7 @@
 #include "clsid_game.h"
 #include "static_cast_checked.hpp"
 #include "player_hud.h"
+#include "Grenade.h"
 
 using namespace InventoryUtilities;
 //Alundaio
@@ -97,11 +98,6 @@ CInventory::CInventory()
 	m_fTotalWeight								= -1.f;
 	m_dwModifyFrame								= 0;
 	m_drop_last_frame							= false;
-	
-	InitPriorityGroupsForQSwitch				();
-	m_next_item_iteration_time					= 0;
-
-	m_change_after_deactivate = false;
 }
 
 
@@ -634,6 +630,7 @@ bool CInventory::Action(u16 cmd, u32 flags)
 		case kWPN_FIREMODE_PREV:
 		case kWPN_ZOOM	 : 
 		case kTORCH:
+		case kFLASH:		//Romann
 		case kNIGHT_VISION:
 			{
 				SendActionEvent(cmd, flags);
@@ -723,9 +720,6 @@ void CInventory::Update()
 				}
 			}
 
-			if (m_change_after_deactivate)
-				ActivateNextGrenage();
-			
 			if (GetNextActiveSlot() != NO_ACTIVE_SLOT)
 			{
 				PIItem tmp_next_active = ItemFromSlot(GetNextActiveSlot());

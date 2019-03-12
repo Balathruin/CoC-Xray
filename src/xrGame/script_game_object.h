@@ -609,7 +609,8 @@ public:
             //////////////////////////////////////////////////////////////////////////
             void				enable_attachable_item	(bool value);			
             bool				attachable_item_enabled	() const;
-            void				enable_night_vision		(bool value);			
+            void				enable_night_vision		(bool value);
+			void				night_vision_allowed	(bool value);			
             bool				night_vision_enabled	() const;
             void				enable_torch			(bool value);
             bool				torch_enabled			() const;
@@ -699,7 +700,7 @@ public:
             bool				invulnerable						() const;
             void				invulnerable						(bool invulnerable);
             LPCSTR				get_smart_cover_description			() const;
-            void				set_visual_name						(LPCSTR visual);
+            void				set_visual_name						(LPCSTR visual,bool bForce = false);
             LPCSTR				get_visual_name						() const;
 
             bool				can_throw_grenades					() const;
@@ -902,6 +903,7 @@ public:
 
 			//CAI_Stalker
 			void				ResetBoneProtections(LPCSTR imm_sect, LPCSTR bone_sect);
+			LPCSTR				bones_protection_sect();
 			//Anything with PPhysicShell (ie. car, actor, stalker, monster, heli)
 			void				ForceSetPosition(Fvector pos, bool bActivate = false);
 

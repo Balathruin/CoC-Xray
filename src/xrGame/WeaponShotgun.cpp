@@ -6,6 +6,8 @@
 #include "inventory.h"
 #include "level.h"
 #include "actor.h"
+#include "script_callback_ex.h"
+#include "script_game_object.h"
 
 CWeaponShotgun::CWeaponShotgun()
 {
@@ -65,7 +67,11 @@ void CWeaponShotgun::OnAnimationEnd(u32 state)
 {
 	if(!m_bTriStateReload || state != eReload)
 		return inherited::OnAnimationEnd(state);
-
+	
+	CActor* A = smart_cast<CActor*>(H_Parent());
+	if (A)
+		A->callback(GameObject::eActorHudAnimationEnd)(smart_cast<CGameObject*>(this)->lua_game_object(),this->hud_sect.c_str(), this->m_current_motion.c_str(), state, this->animation_slot());
+	
 	switch(m_sub_state){
 		case eSubstateReloadBegin:{
 			m_sub_state = eSubstateReloadInProcess;
@@ -90,6 +96,15 @@ void CWeaponShotgun::OnAnimationEnd(u32 state)
 void CWeaponShotgun::Reload() 
 {
 	if(m_bTriStateReload){
+		if (m_pInventory)
+		{
+			CActor* A = smart_cast<CActor*>(H_Parent());
+			if (A)
+			{
+				int	AC = GetSuitableAmmoTotal();
+				A->callback(GameObject::eWeaponNoAmmoAvailable)(lua_game_object(), AC);
+			}
+		}
 		TriStateReload();
 	}else
 		inherited::Reload();
@@ -177,16 +192,16 @@ bool CWeaponShotgun::HaveCartridgeInInventory(u8 cnt)
 	if (unlimited_ammo())	return true;
 	if(!m_pInventory)		return false;
 
-	u32 ac = GetAmmoCount(m_ammoType);
+	u32 ac = GetAmmoCount(m_ammoType.type1);
 	if(ac<cnt)
 	{
 		for(u8 i = 0; i < u8(m_ammoTypes.size()); ++i) 
 		{
-			if(m_ammoType==i) continue;
+			if(m_ammoType.type1==i) continue;
 			ac	+= GetAmmoCount(i);
 			if(ac >= cnt)
 			{
-				m_ammoType = i;
+				m_ammoType.type1 = i;
 				break; 
 			}
 		}
@@ -200,19 +215,19 @@ u8 CWeaponShotgun::AddCartridge		(u8 cnt)
 
 	if ( m_set_next_ammoType_on_reload != undefined_ammo_type )
 	{
-		m_ammoType						= m_set_next_ammoType_on_reload;
+		m_ammoType.type1 = m_set_next_ammoType_on_reload;
 		m_set_next_ammoType_on_reload	= undefined_ammo_type;
 	}
 
 	if( !HaveCartridgeInInventory(1) )
 		return 0;
 
-	m_pCurrentAmmo = smart_cast<CWeaponAmmo*>(m_pInventory->GetAny( m_ammoTypes[m_ammoType].c_str() ));
-	VERIFY((u32)iAmmoElapsed == m_magazine.size());
+	m_pCurrentAmmo = smart_cast<CWeaponAmmo*>(m_pInventory->GetAny( m_ammoTypes[m_ammoType.type1].c_str() ));
+	VERIFY((u32)m_ammoElapsed.type1 == m_magazine.size());
 
 
-	if (m_DefaultCartridge.m_LocalAmmoType != m_ammoType)
-		m_DefaultCartridge.Load(m_ammoTypes[m_ammoType].c_str(), m_ammoType);
+	if (m_DefaultCartridge.m_LocalAmmoType != m_ammoType.type1)
+		m_DefaultCartridge.Load(m_ammoTypes[m_ammoType.type1].c_str(), m_ammoType.type1, m_APk);
 
 	CCartridge l_cartridge = m_DefaultCartridge;
 	while(cnt)
@@ -222,13 +237,13 @@ u8 CWeaponShotgun::AddCartridge		(u8 cnt)
 			if (!m_pCurrentAmmo->Get(l_cartridge)) break;
 		}
 		--cnt;
-		++iAmmoElapsed;
-		l_cartridge.m_LocalAmmoType = m_ammoType;
+		++m_ammoElapsed.type1;
+		l_cartridge.m_LocalAmmoType = m_ammoType.type1;
 		m_magazine.push_back(l_cartridge);
 //		m_fCurrentCartirdgeDisp = l_cartridge.m_kDisp;
 	}
 
-	VERIFY((u32)iAmmoElapsed == m_magazine.size());
+	VERIFY((u32)m_ammoElapsed.type1 == m_magazine.size());
 
 	//выкинуть коробку патронов, если она пустая
 	if(m_pCurrentAmmo && !m_pCurrentAmmo->m_boxCurr && OnServer()) 
@@ -261,6 +276,6 @@ void	CWeaponShotgun::net_Import	(NET_Packet& P)
 #ifdef DEBUG
 		Msg("! %s reload to %s", *l_cartridge.m_ammoSect, m_ammoTypes[LocalAmmoType].c_str());
 #endif
-		l_cartridge.Load( m_ammoTypes[LocalAmmoType].c_str(), LocalAmmoType );
+		l_cartridge.Load( m_ammoTypes[LocalAmmoType].c_str(), LocalAmmoType, m_APk );
 	}
 }

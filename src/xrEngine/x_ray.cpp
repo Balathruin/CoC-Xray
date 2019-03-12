@@ -64,7 +64,6 @@ static int start_year = 1999; // 1999
 
 #ifndef DEDICATED_SERVER
 
-#include "../xrGameSpy/gamespy/md5c.c"
 #include <ctype.h>
 
 #define DEFAULT_MODULE_HASH "3CAABCFCFF6F3A810019C6A72180F166"
@@ -72,6 +71,7 @@ static char szEngineHash[33] = DEFAULT_MODULE_HASH;
 
 PROTECT_API char* ComputeModuleHash(char* pszHash)
 {
+	/*
     //SECUROM_MARKER_HIGH_SECURITY_ON(3)
 
     char szModuleFileName[MAX_PATH];
@@ -122,7 +122,7 @@ PROTECT_API char* ComputeModuleHash(char* pszHash)
     CloseHandle(hModuleHandle);
 
     //SECUROM_MARKER_HIGH_SECURITY_OFF(3)
-
+	*/
     return pszHash;
 }
 #endif // DEDICATED_SERVER
@@ -1203,7 +1203,8 @@ void CApplication::LoadBegin()
 
         m_pRender->LoadBegin();
 #endif
-        phase_timer.Start();
+		if (Core.ParamFlags.test(Core.verboselog))
+			phase_timer.Start();
         load_stage = 0;
 
     }
@@ -1214,9 +1215,12 @@ void CApplication::LoadEnd()
     ll_dwReference--;
     if (0 == ll_dwReference)
     {
-        Msg("* phase time: %d ms", phase_timer.GetElapsed_ms());
-        Msg("* phase cmem: %d K", Memory.mem_usage() / 1024);
-        Console->Execute("stat_memory");
+		if (Core.ParamFlags.test(Core.verboselog))
+		{
+			Msg("* phase time: %d ms", phase_timer.GetElapsed_ms());
+			Msg("* phase cmem: %d K", Memory.mem_usage() / 1024);
+			Console->Execute("stat_memory");
+		}
         g_appLoaded = TRUE;
         // DUMP_PHASE;
     }
@@ -1259,9 +1263,12 @@ void CApplication::LoadStage()
 {
     load_stage++;
     VERIFY(ll_dwReference);
-    Msg("* phase time: %d ms", phase_timer.GetElapsed_ms());
-    phase_timer.Start();
-    Msg("* phase cmem: %d K", Memory.mem_usage() / 1024);
+	if (Core.ParamFlags.test(Core.verboselog))
+	{
+		Msg("* phase time: %d ms", phase_timer.GetElapsed_ms());
+		phase_timer.Start();
+		Msg("* phase cmem: %d K", Memory.mem_usage() / 1024);
+	}
 
 	if (g_pGamePersistent->GameType() == 1)
         max_load_stage = 17;

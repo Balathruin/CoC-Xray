@@ -185,6 +185,7 @@ public:
 virtual void ApplyDamage			(u16 level);
 		SWheel(CCar* acar)
 		{
+			radius = 0.f;
 			bone_id=BI_NONE;
 			car=acar;
 			joint=NULL;
@@ -323,6 +324,11 @@ virtual void ApplyDamage(u16 level);
 		eState state;
 		SDoor(CCar* acar)
 		{
+			update = false;
+			pos_open = 0.f;
+			opened_angle = 0.f;
+			closed_angle = 0.f;
+			open_time = 0;
 			bone_id=BI_NONE;
 			pcar=acar;
 			joint=NULL;
@@ -541,7 +547,7 @@ IC	size_t				CurrentTransmission					(){return m_current_transmission_num;}
 public:
 	virtual bool			allowWeapon					() const		{return true;};
 	virtual bool			HUDView						() const;
-	virtual Fvector			ExitPosition				(){return m_exit_position;}
+	virtual Fvector			ExitPosition				();
 	virtual Fvector			ExitVelocity				();
 	void					GetVelocity					(Fvector& vel)	{m_pPhysicsShell->get_LinearVel(vel);}
 	void					cam_Update					(float dt, float fov);

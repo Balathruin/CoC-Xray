@@ -70,7 +70,6 @@ public:
 	virtual void	PlayAnimBore		();
 	
 private:
-	virtual	void	net_Spawn_install_upgrades	( Upgrades_type saved_upgrades );
 	virtual bool	install_upgrade_impl		( LPCSTR section, bool test );
 	virtual	bool	install_upgrade_ammo_class	( LPCSTR section, bool test );
 	
@@ -81,15 +80,8 @@ public:
 	//для подствольника
 //-	CWeaponAmmo*			m_pAmmo2;
 	xr_vector<shared_str>	m_ammoTypes2;
-	u8						m_ammoType2;
-
-	int						iMagazineSize2;
 	xr_vector<CCartridge>	m_magazine2;
-
-	bool					m_bGrenadeMode;
-
 	CCartridge				m_DefaultCartridge2;
-	u8						iAmmoElapsed2;
 
 	virtual void UpdateGrenadeVisibility(bool visibility);
 };

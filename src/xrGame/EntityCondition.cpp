@@ -123,6 +123,8 @@ void CEntityCondition::LoadCondition(LPCSTR entity_section)
 	m_fKillHitTreshold		= READ_IF_EXISTS(pSettings,r_float,section,"killing_hit_treshold",0.0f);
 	m_fLastChanceHealth		= READ_IF_EXISTS(pSettings,r_float,section,"last_chance_health",0.0f);
 	m_fInvulnerableTimeDelta= READ_IF_EXISTS(pSettings,r_float,section,"invulnerable_time",0.0f)/1000.f;
+
+	m_fBleedSpeedK = READ_IF_EXISTS(pSettings, r_float, section, "bleed_speed_k", (float)(1/3));
 }
 
 void CEntityCondition::LoadTwoHitsDeathParams(LPCSTR section)
@@ -202,8 +204,8 @@ void CEntityCondition::ChangeBleeding(const float percent)
 	for(WOUND_VECTOR_IT it = m_WoundVector.begin(); m_WoundVector.end() != it; ++it)
 	{
 		(*it)->Incarnation			(percent, m_fMinWoundSize);
-		if(0 == (*it)->TotalSize	())
-			(*it)->SetDestroy		(true);
+		if(fis_zero((*it)->TotalSize()))
+			(*it)->SetDestroy(true);
 	}
 }
 
@@ -373,29 +375,21 @@ CWound* CEntityCondition::AddWound(float hit_power, ALife::EHitType hit_type, u1
 
 	//запомнить кость по которой ударили и силу удара
 	WOUND_VECTOR_IT it = m_WoundVector.begin();
-	for(;it != m_WoundVector.end(); it++)
+	WOUND_VECTOR_IT en = m_WoundVector.end();
+	for(;it != en; ++it)
 	{
-		if((*it)->GetBoneNum() == element)
-			break;
+		CWound* pWound = (*it);
+		if (pWound->GetBoneNum() == element)
+		{
+			pWound->AddHit(hit_power*::Random.randF(0.5f, 1.5f), hit_type);
+			return pWound;
+		}
 	}
 	
-	CWound* pWound = NULL;
+	CWound* pWound = xr_new<CWound>(element);
+	pWound->AddHit(hit_power*::Random.randF(0.5f,1.5f), hit_type);
+	m_WoundVector.push_back(pWound);
 
-	//новая рана
-	if (it == m_WoundVector.end())
-	{
-		pWound = xr_new<CWound>(element);
-		pWound->AddHit(hit_power*::Random.randF(0.5f,1.5f), hit_type);
-		m_WoundVector.push_back(pWound);
-	}
-	//старая 
-	else
-	{
-		pWound = *it;
-		pWound->AddHit(hit_power*::Random.randF(0.5f,1.5f), hit_type);
-	}
-
-	VERIFY(pWound);
 	return pWound;
 }
 
@@ -503,13 +497,12 @@ CWound* CEntityCondition::ConditionHit(SHit* pHDS)
 
 float CEntityCondition::BleedingSpeed()
 {
-	float bleeding_speed		=0;
-
+	float bleeding_speed = 0.f;
 	for(WOUND_VECTOR_IT it = m_WoundVector.begin(); m_WoundVector.end() != it; ++it)
-		bleeding_speed			+= (*it)->TotalSize();
-	
-	
-	return (m_WoundVector.empty() ? 0.f : bleeding_speed / m_WoundVector.size());
+		bleeding_speed += (*it)->TotalSize();
+	bleeding_speed *= m_fBleedSpeedK;
+	clamp(bleeding_speed, 0.0f, 10.f);
+	return bleeding_speed;
 }
 
 

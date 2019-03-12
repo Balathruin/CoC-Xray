@@ -30,7 +30,8 @@
 CInventoryOwner::CInventoryOwner()
 {
     m_pTrade = NULL;
-    m_trade_parameters = 0;
+    m_trade_parameters = NULL;
+	m_purchase_list = NULL;
 
     m_inventory = xr_new<CInventory>();
     m_pCharacterInfo = xr_new<CCharacterInfo>();
@@ -47,6 +48,14 @@ CInventoryOwner::CInventoryOwner()
     m_deadbody_can_take = true;
     m_deadbody_closed = false;
     m_play_show_hide_reload_sounds = true;
+	m_money = 0;
+
+	m_bTalking = false;
+	m_bTrading = false;
+	m_pTalkPartner = NULL;
+	m_game_name = "";
+
+	m_trader_flags.zero();
 }
 
 DLL_Pure *CInventoryOwner::_construct()
@@ -143,6 +152,10 @@ BOOL CInventoryOwner::net_Spawn(CSE_Abstract* DC)
 
 	m_deadbody_can_take = pTrader->m_deadbody_can_take;
 	m_deadbody_closed = pTrader->m_deadbody_closed;
+
+	m_trader_flags.assign(pTrader->m_trader_flags.get());
+
+	inventory().CalcTotalWeight();
 
     if (!pThis->Local())  return TRUE;
 

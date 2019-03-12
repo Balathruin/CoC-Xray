@@ -107,6 +107,7 @@ public:
 	virtual void			load					(IReader &input_packet);
 
 	IC float				GetPower				() const			{return m_fPower;}	
+	IC void					SetPower(float val){ m_fPower = val; clamp(m_fPower, 0.f, m_fPowerMax); }
 	IC float				GetRadiation			() const			{return m_fRadiation;}
 	IC float				GetPsyHealth			() const			{return m_fPsyHealth;}
 	IC float				GetSatiety				() const			{return 1.0f;}	
@@ -125,7 +126,7 @@ public:
 	virtual void 			ChangeAlcohol			(const float value){};
 
 	IC void					MaxPower				()					{m_fPower = m_fPowerMax;};
-	IC void					SetMaxPower				(const float val)	{m_fPowerMax = val; clamp(m_fPowerMax,0.1f,1.0f);};
+	IC void					SetMaxPower(const float val)	{ m_fPowerMax = val; clamp(m_fPowerMax, 0.1f, 1.0f); clamp(m_fPower, 0.f, m_fPowerMax); };
 	IC float				GetMaxPower				() const			{return m_fPowerMax;};
 
 	void 					ChangeBleeding			(const float percent);
@@ -176,8 +177,11 @@ protected:
 	//для подсчета состояния открытых ран,
 	//запоминается кость куда был нанесен хит
 	//и скорость потери крови из раны
+public:
 	DEFINE_VECTOR(CWound*, WOUND_VECTOR, WOUND_VECTOR_IT);
+protected:
 	WOUND_VECTOR			m_WoundVector;
+
 	//очистка массива ран
 	
 
@@ -186,6 +190,7 @@ protected:
 	float m_fRadiation;				//доза радиактивного облучения
 	float m_fPsyHealth;				//здоровье
 	float m_fEntityMorale;			//мораль
+	float m_fBleedSpeedK;
 
 	//максимальные величины
 	//	float m_fSatietyMax;

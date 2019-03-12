@@ -1,17 +1,47 @@
 #include "pch_script.h"
 #include "ActorCondition.h"
 #include "EntityCondition.h"
+#include "Wound.h"
 
 using namespace luabind;
 
 void BoosterForEach(CActorCondition* conditions, const luabind::functor<bool> &funct)
 {
-	CEntityCondition::BOOSTER_MAP cur_booster_influences = conditions->GetCurBoosterInfluences();
+	CEntityCondition::BOOSTER_MAP& cur_booster_influences = conditions->GetCurBoosterInfluences();
 	CEntityCondition::BOOSTER_MAP::const_iterator it = cur_booster_influences.begin();
 	CEntityCondition::BOOSTER_MAP::const_iterator it_e = cur_booster_influences.end();
 	for (; it != it_e; ++it)
 	{
-		if (funct((*it).first,(*it).second.fBoostTime,(*it).second.fBoostValue) == true)
+		if (funct((*it).first, (*it).second.fBoostTime, (*it).second.fBoostValue) == true)
+			break;
+	}
+}
+
+bool ApplyBooster_script(CActorCondition* cond, const SBooster& B, LPCSTR sect)
+{
+	return cond->ApplyBooster(B, sect);
+}
+
+void ClearAllBoosters(CActorCondition* conditions)
+{
+	CEntityCondition::BOOSTER_MAP& cur_booster_influences = conditions->GetCurBoosterInfluences();
+	CEntityCondition::BOOSTER_MAP::const_iterator it = cur_booster_influences.begin();
+	CEntityCondition::BOOSTER_MAP::const_iterator it_e = cur_booster_influences.end();
+	for (; it != it_e; ++it)
+	{
+		conditions->DisableBoostParameters((*it).second);
+	}
+	cur_booster_influences.clear();
+}
+
+void WoundForEach(CActorCondition* conditions, const luabind::functor<bool> &funct)
+{
+	CEntityCondition::WOUND_VECTOR const& cur_wounds = conditions->wounds();
+	CEntityCondition::WOUND_VECTOR::const_iterator it = conditions->wounds().begin();
+	CEntityCondition::WOUND_VECTOR::const_iterator it_e = conditions->wounds().end();
+	for (; it != it_e ; ++it)
+	{
+		if (funct((*it)) == true)
 			break;
 	}
 }
@@ -21,10 +51,33 @@ void CActorCondition::script_register(lua_State *L)
 {
 	module(L)
 		[
+			class_<SBooster>("SBooster")
+			.def(constructor<>())
+			.def_readwrite("fBoostTime", &SBooster::fBoostTime)
+			.def_readwrite("fBoostValue", &SBooster::fBoostValue)
+			.def_readwrite("m_type", &SBooster::m_type)
+			,
+			class_<CWound>("CWound")
+			//.def(constructor<>())
+			.def("TypeSize", &CWound::TypeSize)
+			.def("BloodSize", &CWound::BloodSize)
+			.def("AddHit", &CWound::AddHit)
+			.def("Incarnation", &CWound::Incarnation)
+			.def("TotalSize", &CWound::TotalSize)
+			.def("SetBoneNum", &CWound::SetBoneNum)
+			.def("GetBoneNum", &CWound::GetBoneNum)
+			.def("GetParticleBoneNum", &CWound::GetParticleBoneNum)
+			.def("SetParticleBoneNum", &CWound::SetParticleBoneNum)
+			.def("SetDestroy", &CWound::SetDestroy)
+			.def("GetDestroy", &CWound::GetDestroy)
+			,
 			class_<CEntityCondition>("CEntityCondition")
 			//.def(constructor<>())
+			.def("AddWound", &CEntityCondition::AddWound)
+			.def("ClearWounds", &CEntityCondition::ClearWounds)
 			.def("GetWhoHitLastTimeID", &CEntityCondition::GetWhoHitLastTimeID)
 			.def("GetPower", &CEntityCondition::GetPower)
+			.def("SetPower", &CEntityCondition::SetPower)
 			.def("GetRadiation", &CEntityCondition::GetRadiation)
 			.def("GetPsyHealth", &CEntityCondition::GetPsyHealth)
 			.def("GetSatiety", &CEntityCondition::GetSatiety)
@@ -65,11 +118,15 @@ void CActorCondition::script_register(lua_State *L)
 
 			class_<CActorCondition, CEntityCondition>("CActorCondition")
 			//.def(constructor<>())
+			.def("ClearAllBoosters", &ClearAllBoosters)
+			.def("ApplyBooster", &ApplyBooster_script)
 			.def("BoosterForEach", &BoosterForEach)
+			.def("WoundForEach", &WoundForEach)
 			.def("V_Satiety", &CActorCondition::V_Satiety)
 			.def("V_SatietyPower", &CActorCondition::V_SatietyPower)
 			.def("V_SatietyHealth", &CActorCondition::V_SatietyHealth)
 			.def("SatietyCritical", &CActorCondition::SatietyCritical)
+			.def("GetSatiety", &CActorCondition::GetSatiety)
 			.def("BoostMaxWeight", &CActorCondition::BoostMaxWeight)
 			.def("BoostHpRestore", &CActorCondition::BoostHpRestore)
 			.def("BoostPowerRestore", &CActorCondition::BoostPowerRestore)

@@ -50,12 +50,14 @@ void CWeaponShotEffector::Shot( CWeapon* weapon )
 	}
 	m_single_shot = (weapon->GetCurrentFireMode() == 1);
 
-	float angle	= m_cam_recoil.Dispersion    * weapon->cur_silencer_koef.cam_dispersion;
+	CCartridge* ammo = !weapon->m_magazine.empty()?&weapon->m_magazine.back():(0);
+	float k_cam_disp = ammo?ammo->param_s.k_cam_dispersion:1.0f;
+	float angle = m_cam_recoil.Dispersion    * weapon->cur_silencer_koef.cam_dispersion * k_cam_disp;
 	angle      += m_cam_recoil.DispersionInc * weapon->cur_silencer_koef.cam_disper_inc * (float)m_shot_numer;
 
 	m_angle_vert += angle * m_cam_recoil.DispersionFrac;
 
-	clamp(m_angle_vert, -m_cam_recoil.MaxAngleVert, m_cam_recoil.MaxAngleVert);
+	clamp(m_angle_vert, 0.f, m_cam_recoil.MaxAngleVert);
 	if (fis_zero(m_angle_vert - m_cam_recoil.MaxAngleVert))
 	{
 		m_angle_vert *= m_Random.randF(0.96f, 1.04f);

@@ -24,8 +24,9 @@ extern const float TENDTO_SPEED_AIM;	// (zoomed return speed)
 player_hud* g_player_hud = NULL;
 Fvector _ancor_pos;
 Fvector _wpn_root_pos;
-Fvector player_hud::m_hud_offset_pos;
-Fvector player_hud::m_hand_offset_pos;
+
+Fvector m_hud_offset_pos = { 0.f, 0.f, 0.f }; //only in hud adj mode
+Fvector m_hand_offset_pos = { 0.f, 0.f, 0.f };
 
 float CalcMotionSpeed(const shared_str& anim_name)
 {
@@ -112,7 +113,7 @@ void player_hud_motion_container::load(IKinematicsAnimated* model, const shared_
 
 Fvector& attachable_hud_item::hands_attach_pos()
 {
-	Fvector v; v.set(m_measures.m_hands_attach[0]).add(player_hud::m_hand_offset_pos);
+	Fvector v; v.set(m_measures.m_hands_attach[0]).add(m_hand_offset_pos);
 	return v;
 }
 
@@ -124,7 +125,7 @@ Fvector& attachable_hud_item::hands_attach_rot()
 Fvector& attachable_hud_item::hands_offset_pos()
 {
 	u8 idx = m_parent_hud_item->GetCurrentHudOffsetIdx();
-	Fvector v; v.set(m_measures.m_hands_offset[0][idx]).add(player_hud::m_hud_offset_pos);
+	Fvector v; v.set(m_measures.m_hands_offset[0][idx]).add(m_hud_offset_pos);
 	return v;
 }
 
@@ -134,19 +135,22 @@ Fvector& attachable_hud_item::hands_offset_rot()
 	return m_measures.m_hands_offset[1][idx];
 }
 
-void attachable_hud_item::set_bone_visible(const shared_str& bone_name, BOOL bVisibility, BOOL bSilent)
+bool attachable_hud_item::set_bone_visible(const shared_str& bone_name, BOOL bVisibility, BOOL bSilent)
 {
 	u16  bone_id;
 	BOOL bVisibleNow;
 	bone_id = m_model->LL_BoneID(bone_name);
 	if (bone_id == BI_NONE)
 	{
-		if (bSilent)	return;
+		if (bSilent)	
+			return false;
 		R_ASSERT2(0, make_string("model [%s] has no bone [%s]", pSettings->r_string(m_sect_name, "item_visual"), bone_name.c_str()).c_str());
 	}
 	bVisibleNow = m_model->LL_GetBoneVisible(bone_id);
 	if (bVisibleNow != bVisibility)
 		m_model->LL_SetBoneVisible(bone_id, bVisibility, TRUE);
+
+	return true;
 }
 
 void attachable_hud_item::update(bool bForce)
@@ -192,7 +196,7 @@ void attachable_hud_item::setup_firedeps(firedeps& fd)
 		fire_mat.transform_tiny(fd.vLastFP, m_measures.m_fire_point_offset);
 		m_item_transform.transform_tiny(fd.vLastFP);
 
-		fd.vLastFD.set(0.f, 0.f, 1.f);
+		fd.vLastFD.set(m_measures.m_fire_direction);
 		m_item_transform.transform_dir(fd.vLastFD);
 		VERIFY(_valid(fd.vLastFD));
 		VERIFY(_valid(fd.vLastFD));
@@ -269,6 +273,7 @@ void hud_item_measures::load(const shared_str& sect_name, IKinematics* K)
 		bone_name = pSettings->r_string(sect_name, "fire_bone");
 		m_fire_bone = K->LL_BoneID(bone_name);
 		m_fire_point_offset = pSettings->r_fvector3(sect_name, "fire_point");
+		m_fire_direction = READ_IF_EXISTS(pSettings, r_fvector3, sect_name, "fire_direction", Fvector().set(0.f, 0.f, 1.0f));
 	}
 	else
 		m_fire_point_offset.set(0, 0, 0);
@@ -424,8 +429,6 @@ player_hud::player_hud()
 	m_attached_items[1] = NULL;
 	m_transform.identity();
 	m_attach_offset.identity();
-	m_hud_offset_pos.set(0.f, 0.f, 0.f);
-	m_hand_offset_pos.set(0.f, 0.f, 0.f);
 }
 
 
